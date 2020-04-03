@@ -30,7 +30,7 @@ extern "C"
 #endif
 
 int fps = 25; //帧率
-char url[] = "/Users/yisiying/Downloads/test.mp4";
+char url[] = "/Users/yisiying/Downloads/NIoh.mp4";
 
 bool thread_exit = false;
 bool thread_pause = false;
@@ -111,8 +111,8 @@ int main() {
         return -1;
     }
 
-    SDL_Window *pWindow = SDL_CreateWindow("播放器", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pCodecCtx->width,
-                                           pCodecCtx->height,
+    SDL_Window *pWindow = SDL_CreateWindow("播放器", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pParameters->width,
+                                           pParameters->height,
                                            SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!pWindow) {
         cout << "创建窗口失败" << endl;
@@ -126,7 +126,7 @@ int main() {
     }
 
     SDL_Texture *pTexture = SDL_CreateTexture(pRenderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING,
-                                              pCodecCtx->width, pCodecCtx->height);
+                                              pParameters->width, pParameters->height);
     if (!pTexture) {
         cout << "创建纹理失败" << endl;
         return -1;
@@ -171,14 +171,14 @@ int main() {
 
             if(packet->stream_index == videoStreamIndex){
                 avcodec_send_packet(pCodecCtx,packet);
-                while (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
+                if (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
                     //显示到屏幕
                     SDL_UpdateYUVTexture(pTexture, nullptr, pFrame->data[0], pFrame->linesize[0], pFrame->data[1],
                                          pFrame->linesize[1], pFrame->data[2], pFrame->linesize[2]);
                     rect.x = 0;
                     rect.y = 0;
-                    rect.w = pCodecCtx->width;
-                    rect.h = pCodecCtx->height;
+                    rect.w = pFrame->width;
+                    rect.h = pFrame->height;
 
                     SDL_RenderClear(pRenderer);
                     SDL_RenderCopy(pRenderer, pTexture, nullptr, &rect);
@@ -192,7 +192,6 @@ int main() {
             continue;
         }
     }
-
 
     /*
      //没有考虑解码的时间，不是严格的40ms一帧
@@ -229,6 +228,8 @@ int main() {
      */
 
     //free
+    SDL_DestroyRenderer(pRenderer);
+    SDL_DestroyWindow(pWindow);
     SDL_Quit();
     if (pFrame) {
         av_frame_free(&pFrame);
