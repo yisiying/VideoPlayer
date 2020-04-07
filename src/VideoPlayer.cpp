@@ -30,7 +30,7 @@ extern "C"
 #endif
 
 int fps = 25; //帧率
-char url[] = "/Users/yisiying/Downloads/NIoh.mp4";
+char url[] = "/Users/yisiying/Downloads/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHS&JPN][BDrip][AVC AAC YUV420P8].mp4/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHS&JPN][BDrip][AVC AAC YUV420P8].mp4";
 
 bool thread_exit = false;
 bool thread_pause = false;
@@ -103,6 +103,7 @@ int main() {
     av_init_packet(packet);
 
     pFrame = av_frame_alloc();
+    frame = av_frame_alloc();
 
     //SDL------------------
     //Init
@@ -111,8 +112,10 @@ int main() {
         return -1;
     }
 
-    SDL_Window *pWindow = SDL_CreateWindow("播放器", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, pParameters->width,
-                                           pParameters->height,
+    int width = pParameters->width;
+    int height = pParameters->height;
+    SDL_Window *pWindow = SDL_CreateWindow("播放器", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width,
+                                           height,
                                            SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!pWindow) {
         cout << "创建窗口失败" << endl;
@@ -126,7 +129,7 @@ int main() {
     }
 
     SDL_Texture *pTexture = SDL_CreateTexture(pRenderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING,
-                                              pParameters->width, pParameters->height);
+                                              width, height);
     if (!pTexture) {
         cout << "创建纹理失败" << endl;
         return -1;
@@ -177,8 +180,8 @@ int main() {
                                          pFrame->linesize[1], pFrame->data[2], pFrame->linesize[2]);
                     rect.x = 0;
                     rect.y = 0;
-                    rect.w = pFrame->width;
-                    rect.h = pFrame->height;
+                    rect.w = width;
+                    rect.h = height;
 
                     SDL_RenderClear(pRenderer);
                     SDL_RenderCopy(pRenderer, pTexture, nullptr, &rect);
