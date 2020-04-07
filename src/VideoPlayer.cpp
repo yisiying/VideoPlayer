@@ -34,7 +34,7 @@ char url[] = "/Users/yisiying/Downloads/test.mp4";
 
 bool thread_exit = false;
 bool thread_pause = false;
-const Uint32 REFRESH_EVENT = SDL_USEREVENT +1;
+const Uint32 REFRESH_EVENT = SDL_USEREVENT + 1;
 const Uint32 BREAK_EVENT = SDL_USEREVENT + 2;
 
 int main() {
@@ -73,7 +73,8 @@ int main() {
         return -1;
     }
 
-    fps = pFormatCtx->streams[videoStreamIndex]->avg_frame_rate.num/pFormatCtx->streams[videoStreamIndex]->avg_frame_rate.den;
+    fps = pFormatCtx->streams[videoStreamIndex]->avg_frame_rate.num /
+          pFormatCtx->streams[videoStreamIndex]->avg_frame_rate.den;
 
     // 从流中获取流参数
     AVCodecParameters *pParameters = pFormatCtx->streams[videoStreamIndex]->codecpar;  //流参数
@@ -138,12 +139,12 @@ int main() {
         thread_exit = false;
         thread_pause = false;
 
-        while(!thread_exit){
-            if(!thread_pause){
+        while (!thread_exit) {
+            if (!thread_pause) {
                 SDL_Event event;
                 event.type = REFRESH_EVENT;
                 SDL_PushEvent(&event);
-                SDL_Delay(1000/fps);
+                SDL_Delay(1000 / fps);
             }
         }
         thread_exit = false;
@@ -159,20 +160,20 @@ int main() {
 
     SDL_Event event;
     SDL_Rect rect;
-    while(true){
+    while (true) {
         SDL_WaitEvent(&event);
-        if(event.type == REFRESH_EVENT){
-            while(true){
-                if(av_read_frame(pFormatCtx,packet)<0){
+        if (event.type == REFRESH_EVENT) {
+            while (true) {
+                if (av_read_frame(pFormatCtx, packet) < 0) {
                     thread_exit = true;
                 }
-                if(packet->stream_index == videoStreamIndex) {
+                if (packet->stream_index == videoStreamIndex) {
                     break;
                 }
             }
 
-            if(packet->stream_index == videoStreamIndex){
-                avcodec_send_packet(pCodecCtx,packet);
+            if (packet->stream_index == videoStreamIndex) {
+                avcodec_send_packet(pCodecCtx, packet);
                 if (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
                     //显示到屏幕
                     SDL_UpdateYUVTexture(pTexture, nullptr, pFrame->data[0], pFrame->linesize[0], pFrame->data[1],
@@ -188,51 +189,60 @@ int main() {
                 }
                 av_packet_unref(packet);
             }
-        }else if(event.type == BREAK_EVENT){
+        } else if (event.type == BREAK_EVENT) {
             break;
-        }else{
+        } else if (event.type == SDL_KEYDOWN) {
+            if (event.key.keysym.sym == SDLK_SPACE) { //空格键暂停
+                thread_pause = !thread_pause;
+            }
+            if (event.key.keysym.sym == SDLK_ESCAPE) { // ESC键退出
+                thread_exit = 1;
+            }
+        } else {
             continue;
         }
     }
 
-    /*
-     //没有考虑解码的时间，不是严格的40ms一帧
-    while (av_read_frame(pFormatCtx, packet) >= 0) {
-        if (packet->stream_index == videoStreamIndex) {
-            //解码
-            avcodec_send_packet(pCodecCtx, packet);
-            while (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
-                //显示到屏幕
-                SDL_UpdateYUVTexture(pTexture, NULL, pFrame->data[0], pFrame->linesize[0], pFrame->data[1],
-                                     pFrame->linesize[1], pFrame->data[2], pFrame->linesize[2]);
-                rect.x = 0;
-                rect.y = 0;
-                rect.w = pCodecCtx->width;
-                rect.h = pCodecCtx->height;
+/*
+ //没有考虑解码的时间，不是严格的40ms一帧
+while (av_read_frame(pFormatCtx, packet) >= 0) {
+    if (packet->stream_index == videoStreamIndex) {
+        //解码
+        avcodec_send_packet(pCodecCtx, packet);
+        while (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
+            //显示到屏幕
+            SDL_UpdateYUVTexture(pTexture, NULL, pFrame->data[0], pFrame->linesize[0], pFrame->data[1],
+                                 pFrame->linesize[1], pFrame->data[2], pFrame->linesize[2]);
+            rect.x = 0;
+            rect.y = 0;
+            rect.w = pCodecCtx->width;
+            rect.h = pCodecCtx->height;
 
-                SDL_RenderClear(pRenderer);
-                SDL_RenderCopy(pRenderer, pTexture, NULL, &rect);
-                SDL_RenderPresent(pRenderer);
+            SDL_RenderClear(pRenderer);
+            SDL_RenderCopy(pRenderer, pTexture, NULL, &rect);
+            SDL_RenderPresent(pRenderer);
 
-                SDL_Delay(40);//没有考虑解码的时间，不是严格的40ms一帧
-            }
-        }
-
-        av_packet_unref(packet);
-
-        // 事件处理
-        SDL_Event event;
-        SDL_PollEvent(&event);
-        if (event.type == SDL_QUIT) {
-            break;
+            SDL_Delay(40);//没有考虑解码的时间，不是严格的40ms一帧
         }
     }
-     */
 
-    //free
+    av_packet_unref(packet);
+
+    // 事件处理
+    SDL_Event event;
+    SDL_PollEvent(&event);
+    if (event.type == SDL_QUIT) {
+        break;
+    }
+}
+ */
+
+//free
     SDL_DestroyRenderer(pRenderer);
     SDL_DestroyWindow(pWindow);
+
     SDL_Quit();
+
     if (pFrame) {
         av_frame_free(&pFrame);
     }
