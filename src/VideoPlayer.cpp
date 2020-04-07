@@ -103,7 +103,6 @@ int main() {
     av_init_packet(packet);
 
     pFrame = av_frame_alloc();
-    frame = av_frame_alloc();
 
     //SDL------------------
     //Init
