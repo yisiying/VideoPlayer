@@ -30,7 +30,7 @@ extern "C"
 #endif
 
 int fps = 25; //帧率
-char url[] = "/Users/yisiying/Downloads/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHS&JPN][BDrip][AVC AAC YUV420P8].mp4/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHS&JPN][BDrip][AVC AAC YUV420P8].mp4";
+char url[] = "/Users/yisiying/Downloads/test.mp4";
 
 bool thread_exit = false;
 bool thread_pause = false;
