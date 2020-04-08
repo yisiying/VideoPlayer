@@ -1,4 +1,5 @@
 #include<iostream>
+#include<math.h>
 
 using std::cout;
 using std::endl;
@@ -30,7 +31,7 @@ extern "C"
 #endif
 
 int fps = 25; //帧率
-char url[] = "/Users/yisiying/Downloads/test.mp4";
+char url[] = "/Users/yisiying/Downloads/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHT&JPN][BDrip][AVC AAC YUV420P8].mp4/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHT&JPN][BDrip][AVC AAC YUV420P8].mp4";
 
 bool thread_exit = false;
 bool thread_pause = false;
@@ -159,7 +160,19 @@ int main() {
     SDL_CreateThread(fn, "video thread", nullptr);
 
     SDL_Event event;
+
     SDL_Rect rect;
+    SDL_GetDisplayUsableBounds(0, &rect);
+    rect.x = 0;
+    rect.y = 0;
+    //把视频按原比例缩小到1680*960以内
+    if (width > rect.w) {
+        rect.h = height * rect.w / width;
+    }
+    if (height > rect.h) {
+        rect.w = width * rect.h / height;
+    }
+
     while (true) {
         SDL_WaitEvent(&event);
         if (event.type == REFRESH_EVENT) {
@@ -178,10 +191,10 @@ int main() {
                     //显示到屏幕
                     SDL_UpdateYUVTexture(pTexture, nullptr, pFrame->data[0], pFrame->linesize[0], pFrame->data[1],
                                          pFrame->linesize[1], pFrame->data[2], pFrame->linesize[2]);
-                    rect.x = 0;
-                    rect.y = 0;
-                    rect.w = width;
-                    rect.h = height;
+//                    rect.x = 0;
+//                    rect.y = 0;
+//                    rect.w = width;
+//                    rect.h = height;
 
                     SDL_RenderClear(pRenderer);
                     SDL_RenderCopy(pRenderer, pTexture, nullptr, &rect);
