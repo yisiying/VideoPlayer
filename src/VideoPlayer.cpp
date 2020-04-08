@@ -14,6 +14,8 @@ extern "C"
 #include "libavformat/avformat.h"
 #include "libswresample/swresample.h"
 #include "SDL2/SDL.h"
+    #include <libavutil/imgutils.h>
+
 };
 #else
 //Linux...
@@ -25,6 +27,8 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 #include <SDL2/SDL.h>
+#include <libavutil/imgutils.h>
+
 #ifdef __cplusplus
 };
 #endif
@@ -44,6 +48,7 @@ int main() {
     AVCodec *pCodec;
     AVPacket *packet;
     AVFrame *pFrame;
+    AVFrame *pFrameYUV;
     int videoStreamIndex;
 
     av_register_all();
@@ -105,6 +110,17 @@ int main() {
     av_init_packet(packet);
 
     pFrame = av_frame_alloc();
+    pFrameYUV = av_frame_alloc();
+
+    unsigned char *out_buffer=(unsigned char *)av_malloc(av_image_get_buffer_size(AV_PIX_FMT_YUV420P,  pCodecCtx->width, pCodecCtx->height,1));
+
+    av_image_fill_arrays(pFrameYUV->data, pFrameYUV->linesize,out_buffer,
+                         AV_PIX_FMT_YUV420P,pCodecCtx->width, pCodecCtx->height,1);
+    
+
+    SwsContext *pSwsContext = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt,
+                                             pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL,
+                                             NULL, NULL);
 
     //SDL------------------
     //Init
@@ -188,14 +204,12 @@ int main() {
             if (packet->stream_index == videoStreamIndex) {
                 avcodec_send_packet(pCodecCtx, packet);
                 if (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
-                    //显示到屏幕
-                    SDL_UpdateYUVTexture(pTexture, nullptr, pFrame->data[0], pFrame->linesize[0], pFrame->data[1],
-                                         pFrame->linesize[1], pFrame->data[2], pFrame->linesize[2]);
-//                    rect.x = 0;
-//                    rect.y = 0;
-//                    rect.w = width;
-//                    rect.h = height;
 
+                    sws_scale(pSwsContext, (const unsigned char *const *) pFrame->data, pFrame->linesize, 0,
+                              pCodecCtx->height, pFrameYUV->data, pFrameYUV->linesize);
+
+                    //显示到屏幕
+                    SDL_UpdateTexture(pTexture, nullptr, pFrameYUV->data[0], pFrameYUV->linesize[0]);
                     SDL_RenderClear(pRenderer);
                     SDL_RenderCopy(pRenderer, pTexture, nullptr, &rect);
                     SDL_RenderPresent(pRenderer);
@@ -216,41 +230,8 @@ int main() {
         }
     }
 
-/*
- //没有考虑解码的时间，不是严格的40ms一帧
-while (av_read_frame(pFormatCtx, packet) >= 0) {
-    if (packet->stream_index == videoStreamIndex) {
-        //解码
-        avcodec_send_packet(pCodecCtx, packet);
-        while (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
-            //显示到屏幕
-            SDL_UpdateYUVTexture(pTexture, NULL, pFrame->data[0], pFrame->linesize[0], pFrame->data[1],
-                                 pFrame->linesize[1], pFrame->data[2], pFrame->linesize[2]);
-            rect.x = 0;
-            rect.y = 0;
-            rect.w = pCodecCtx->width;
-            rect.h = pCodecCtx->height;
-
-            SDL_RenderClear(pRenderer);
-            SDL_RenderCopy(pRenderer, pTexture, NULL, &rect);
-            SDL_RenderPresent(pRenderer);
-
-            SDL_Delay(40);//没有考虑解码的时间，不是严格的40ms一帧
-        }
-    }
-
-    av_packet_unref(packet);
-
-    // 事件处理
-    SDL_Event event;
-    SDL_PollEvent(&event);
-    if (event.type == SDL_QUIT) {
-        break;
-    }
-}
- */
-
 //free
+    sws_freeContext(pSwsContext);
     SDL_DestroyRenderer(pRenderer);
     SDL_DestroyWindow(pWindow);
 
@@ -258,6 +239,9 @@ while (av_read_frame(pFormatCtx, packet) >= 0) {
 
     if (pFrame) {
         av_frame_free(&pFrame);
+    }
+    if (pFrameYUV) {
+        av_frame_free(&pFrameYUV);
     }
     avcodec_close(pCodecCtx);
     if (pFormatCtx) {
