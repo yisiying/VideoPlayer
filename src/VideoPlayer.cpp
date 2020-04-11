@@ -14,7 +14,7 @@ extern "C"
 #include "libavformat/avformat.h"
 #include "libswresample/swresample.h"
 #include "SDL2/SDL.h"
-    #include <libavutil/imgutils.h>
+#include <libavutil/imgutils.h>
 
 };
 #else
@@ -112,11 +112,12 @@ int main() {
     pFrame = av_frame_alloc();
     pFrameYUV = av_frame_alloc();
 
-    unsigned char *out_buffer=(unsigned char *)av_malloc(av_image_get_buffer_size(AV_PIX_FMT_YUV420P,  pCodecCtx->width, pCodecCtx->height,1));
+    unsigned char *out_buffer = (unsigned char *) av_malloc(
+            av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1));
 
-    av_image_fill_arrays(pFrameYUV->data, pFrameYUV->linesize,out_buffer,
-                         AV_PIX_FMT_YUV420P,pCodecCtx->width, pCodecCtx->height,1);
-    
+    av_image_fill_arrays(pFrameYUV->data, pFrameYUV->linesize, out_buffer,
+                         AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
+
 
     SwsContext *pSwsContext = sws_getContext(pCodecCtx->width, pCodecCtx->height, pCodecCtx->pix_fmt,
                                              pCodecCtx->width, pCodecCtx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, NULL,
@@ -133,11 +134,17 @@ int main() {
     int height = pParameters->height;
     SDL_Window *pWindow = SDL_CreateWindow("播放器", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width,
                                            height,
-                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+                                           SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!pWindow) {
         cout << "创建窗口失败" << endl;
         return -1;
     }
+
+    int dw, dh;
+    SDL_GL_GetDrawableSize(pWindow, &dw, &dh);
+//    float ratio = std::min((float)dw/(float)width,(float)dh/(float)height);
+//    float ratio = (float)dw/(float)width;
+//    float ratio = (float)dw/(float)width;
 
     SDL_Renderer *pRenderer = SDL_CreateRenderer(pWindow, -1, 0);
     if (!pRenderer) {
@@ -178,15 +185,15 @@ int main() {
     SDL_Event event;
 
     SDL_Rect rect;
-    SDL_GetDisplayUsableBounds(0, &rect);
     rect.x = 0;
     rect.y = 0;
-    //把视频按原比例缩小到1680*960以内
-    if (width > rect.w) {
-        rect.h = height * rect.w / width;
-    }
-    if (height > rect.h) {
-        rect.w = width * rect.h / height;
+    rect.w = dw;
+    rect.h = dw * height/width;
+
+    if (rect.h>dh) {
+        rect.w = rect.w * dh / rect.h;
+        rect.x = (dw - rect.w)/2;
+        rect.h = dh;
     }
 
     while (true) {
