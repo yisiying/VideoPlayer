@@ -1,5 +1,7 @@
+#include "VideoPlayer.h"
+
 #include<iostream>
-#include<math.h>
+#include<cmath>
 
 using std::cout;
 using std::endl;
@@ -34,15 +36,17 @@ extern "C"
 #endif
 #endif
 
-int fps = 25; //帧率
-char url[] = "/Users/yisiying/Downloads/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHT&JPN][BDrip][AVC AAC YUV420P8].mp4/[Mabors-Sub][Kono Subarashii Sekai ni Shukufuku o! Kurenai Densetsu][Movie][1080P][CHT&JPN][BDrip][AVC AAC YUV420P8].mp4";
-
-bool thread_exit = false;
-bool thread_pause = false;
+bool thread_exit;
+bool thread_pause;
 const Uint32 REFRESH_EVENT = SDL_USEREVENT + 1;
 const Uint32 BREAK_EVENT = SDL_USEREVENT + 2;
+int fps;
 
-int main() {
+VideoPlayer::VideoPlayer(char *s) {
+    url = s;
+}
+
+int VideoPlayer::start() {
     AVFormatContext *pFormatCtx;
     AVCodecContext *pCodecCtx;
     AVCodec *pCodec;
@@ -142,9 +146,6 @@ int main() {
 
     int dw, dh;
     SDL_GL_GetDrawableSize(pWindow, &dw, &dh);
-//    float ratio = std::min((float)dw/(float)width,(float)dh/(float)height);
-//    float ratio = (float)dw/(float)width;
-//    float ratio = (float)dw/(float)width;
 
     SDL_Renderer *pRenderer = SDL_CreateRenderer(pWindow, -1, 0);
     if (!pRenderer) {
@@ -188,11 +189,11 @@ int main() {
     rect.x = 0;
     rect.y = 0;
     rect.w = dw;
-    rect.h = dw * height/width;
+    rect.h = dw * height / width;
 
-    if (rect.h>dh) {
+    if (rect.h > dh) {
         rect.w = rect.w * dh / rect.h;
-        rect.x = (dw - rect.w)/2;
+        rect.x = (dw - rect.w) / 2;
         rect.h = dh;
     }
 
