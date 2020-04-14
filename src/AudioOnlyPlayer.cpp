@@ -33,6 +33,7 @@ extern "C"
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h> //audio
 #include <SDL2/SDL.h>
+#include <libavutil/samplefmt.h>
 #include <libavutil/imgutils.h>
 
 #ifdef __cplusplus
@@ -138,9 +139,9 @@ int AudioOnlyPlayer::start() {
 
     //SDL_AudioSpec
     SDL_AudioSpec wanted_spec;
-    wanted_spec.freq = pCodecCtx -> sample_rate;
+    wanted_spec.freq = pCodecCtx->sample_rate;
     wanted_spec.format = AUDIO_S16SYS;
-    wanted_spec.channels = pCodecCtx -> channels;
+    wanted_spec.channels = pCodecCtx->channels;
     wanted_spec.silence = 0;
     wanted_spec.samples = out_nb_samples;
     wanted_spec.callback = fill_audio;
@@ -150,6 +151,13 @@ int AudioOnlyPlayer::start() {
         printf("can't open audio.\n");
         return -1;
     }
+
+    AVFrame wanted_frame;
+
+    wanted_frame.format = AV_SAMPLE_FMT_S16;
+    wanted_frame.sample_rate = wanted_spec.freq;
+    wanted_frame.channel_layout = av_get_default_channel_layout(wanted_spec.channels);
+    wanted_frame.channels = wanted_spec.channels;
 
 
     int64_t in_channel_layout = av_get_default_channel_layout(pCodecCtx->channels);
@@ -167,7 +175,28 @@ int AudioOnlyPlayer::start() {
         if (pPacket->stream_index == audioStreamIndex) {
             avcodec_send_packet(pCodecCtx, pPacket);
             if (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
-                swr_convert(au_convert_ctx, &out_buffer, MAX_AUDIO_FRAME_SIZE, (const uint8_t **) pFrame->data,
+                if (pFrame->format != AUDIO_S16SYS
+                    || pFrame->channel_layout != pCodecCtx->channel_layout
+                    || pFrame->sample_rate != pCodecCtx->sample_rate
+                    || pFrame->nb_samples != out_nb_samples) {
+                    if (au_convert_ctx != nullptr) {
+                        swr_free(&au_convert_ctx);
+                        au_convert_ctx = nullptr;
+                    }
+                    au_convert_ctx = swr_alloc_set_opts(NULL, wanted_frame.channel_layout,
+                                                        (enum AVSampleFormat) wanted_frame.format,
+                                                        wanted_frame.sample_rate,
+                                                        pFrame->channel_layout, (enum AVSampleFormat) pFrame->format,
+                                                        pFrame->sample_rate, 0, NULL);
+
+                    if (au_convert_ctx == NULL || swr_init(au_convert_ctx) < 0) {
+                        cout << "swr_init failed" << endl;
+                        break;
+                    }
+                }
+                int dst_nb_samples = av_rescale_rnd(swr_get_delay(au_convert_ctx, pFrame->sample_rate) + pFrame->nb_samples,
+                                                    wanted_frame.sample_rate, wanted_frame.format, AV_ROUND_INF);
+                swr_convert(au_convert_ctx, &out_buffer, dst_nb_samples, (const uint8_t **) pFrame->data,
                             pFrame->nb_samples);
             }
             while (audio_len > 0)//Wait until finish
