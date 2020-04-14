@@ -175,6 +175,12 @@ int AudioOnlyPlayer::start() {
         if (pPacket->stream_index == audioStreamIndex) {
             avcodec_send_packet(pCodecCtx, pPacket);
             if (avcodec_receive_frame(pCodecCtx, pFrame) == 0) {
+                /**
+                * 接下来判断我们之前设置SDL时设置的声音格式(AV_SAMPLE_FMT_S16)，声道布局，
+                * 采样频率，每个AVFrame的每个声道采样数与
+                * 得到的该AVFrame分别是否相同，如有任意不同，我们就需要swr_convert该AvFrame，
+                * 然后才能符合之前设置好的SDL的需要，才能播放
+                */
                 if (pFrame->format != AUDIO_S16SYS
                     || pFrame->channel_layout != pCodecCtx->channel_layout
                     || pFrame->sample_rate != pCodecCtx->sample_rate
@@ -194,8 +200,9 @@ int AudioOnlyPlayer::start() {
                         break;
                     }
                 }
-                int dst_nb_samples = av_rescale_rnd(swr_get_delay(au_convert_ctx, pFrame->sample_rate) + pFrame->nb_samples,
-                                                    wanted_frame.sample_rate, wanted_frame.format, AV_ROUND_INF);
+                int dst_nb_samples = av_rescale_rnd(
+                        swr_get_delay(au_convert_ctx, pFrame->sample_rate) + pFrame->nb_samples,
+                        wanted_frame.sample_rate, wanted_frame.format, AV_ROUND_INF);
                 swr_convert(au_convert_ctx, &out_buffer, dst_nb_samples, (const uint8_t **) pFrame->data,
                             pFrame->nb_samples);
             }
