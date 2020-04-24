@@ -82,7 +82,7 @@ message(SWSCALE_INCLUDE_DIR=${SWSCALE_INCLUDE_DIR})
 message(SWSCALE_LIBRARY=${SWSCALE_LIBRARY})
 
 
-add_executable(VideoPlayer src/VideoPlayer.cpp src/main.cpp include/VideoPlayer.h src/AudioOnlyPlayer.cpp include/AudioOnlyPlayer.h)
+add_executable(VideoPlayer src/VideoPlayer.cpp main.cpp include/VideoPlayer.h src/AudioOnlyPlayer.cpp include/AudioOnlyPlayer.h src/AVPlayer.cpp include/AVPlayer.h)
 
 target_include_directories(${PROJECT_NAME}
         PRIVATE
